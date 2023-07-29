@@ -1,0 +1,83 @@
+Lab Notebook for Bi622 Demultiplexing:
+Dove Enicks
+
+Assignment the First:
+Part I:
+Data Exploration:  
+located on Talapas:  /projects/bgmp/shared/2017_sequencing/
+    four read fastq files:  R1 - R4, based off which was first sequenced during the Illumina sequencing
+        R1 is read one, R2 is index one
+        R3 is index two, R4 is read two
+    file names:     
+        1294_S1_L008_R1_001.fastq.gz
+        1294_S1_L008_R2_001.fastq.gz
+        1294_S1_L008_R3_001.fastq.gz
+        1294_S1_L008_R4_001.fastq.gz
+commands to determine:
+number of records in each file:
+    ```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R3_001.fastq.gz | wc -l``` 1452986940/4 = 363,246,735
+    *same for all files
+number of bp per read 1/ read 2:
+    ```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R1_001.fastq.gz | head -n 2 | grep "^G" | wc ``` 101 bp + 1 "\n" for 102 characters in seq line
+    ```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R2_001.fastq.gz | head -n 2 | grep "^G" | wc ``` 8 bp + 1 "\n" for 9 characters
+what does it look like:
+    ```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R1_001.fastq.gz | head```
+    @K00337:83:HJKJNBBXX:8:1101:1265:1191 1:N:0:1
+    GNCTGGCATTCCCAGAGACATCAGTACCCAGTTGGTTCAGACAGTTCCTCTATTGGTTGACAAGGTCTTCATTTCTAGTGATATCAACACGGTGTCTACAA
+    +
+    A#A-<FJJJ<JJJJJJJJJJJJJJJJJFJJJJFFJJFJJJAJJJJ-AJJJJJJJFFJJJJJJFFA-7<AJJJFFAJJJJJF<F--JJJJJJF-A-F7JJJJ
+    @K00337:83:HJKJNBBXX:8:1101:1286:1191 1:N:0:1
+    CNACCTGTCCCCAGCTCACAGGACAGCACACCAAAGGCGGCAACCCACACCCAGTTTTACAGCCACACAGTGCCTTGTTTTACTTGAGGACCCCCCACTCC
+    +
+    A#AAFJJJJJJJJJJFJJJJJJJJJJJJJJJJJJJJJJJJFJJJJJJJJJJJJJJAJJJJJJJJJJJJJJFJJJJJFFFFJJJJJJJJJJJJJJJJJJ77F
+    @K00337:83:HJKJNBBXX:8:1101:1347:1191 1:N:0:1
+    GNGGTCTTCTACCTTTCTCTTCTTTTTTGGAGGAGTAGAATGTTGAGAGTCAGCAGTAGCCTCATCATCACTAGATGGCATTTCTTCTGAGCAAAACAGGT
+    ``` zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R2_001.fastq.gz | head```
+    @K00337:83:HJKJNBBXX:8:1101:1265:1191 2:N:0:1
+    NCTTCGAC
+    +
+    #AA<FJJJ
+    @K00337:83:HJKJNBBXX:8:1101:1286:1191 2:N:0:1
+    NACAGCGA
+    +
+    #AAAFJJJ
+    @K00337:83:HJKJNBBXX:8:1101:1347:1191 2:N:0:1
+    NTCCTAAG
+
+So after exploration, I need to write a script to parse the files to create a histogram of the avg quality scores at each base:
+I want to make a sbatch because the files are so BIG! 
+I want to use my environment named:  bgmp_py311
+    in order to use matplotlib I ```mamba activate bgmp_py311``` then I ```mamba install matplotlib``` accepted default download arguments
+
+I first wrote a python script called basq_hist.py and it is located under /projects/bgmp/dovee/bioinfo/Bi622/Demultiplex/Assignment-the-first
+I also moved my current bioinfo module to the same folder, and brought a test file from ps4 to test it with. 
+When I tested it:  ```./baseq_hist.py -f pythontestfilefromps4.fastq.gz -o deleteme``` This output a graph called deleteme.png which looked exactly like the one from ps4.
+
+I then wrote a SLURM script called base_qual_hist.sh located in the same working directory.
+Command used to run:  ```sbatch base_qual_hist.sh /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R1_001.fastq.gz /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R2_001.fastq.gz /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R3_001.fastq.gz /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R4_001.fastq.gz```
+job number 23559
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 1:52:31
+exit status:  0
+
+In the meantime, I answered Part1, Q2, Number 3:  to find the number indices that have an "N" in the sequences:
+```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R3_001.fastq.gz | sed -n '4~4p' | grep -E "[#]" 
+| wc -l``` which returned 3328051
+```zcat /projects/bgmp/shared/2017_sequencing/1294_S1_L008_R2_001.fastq.gz | sed -n '4~4p' | grep -E "[#]" 
+| wc -l``` which returned 3976613
+
+I was having issues running my base_qual_hist.sh script for all four at a time. 
+    potentially due to echo statements, because the python script works and the output looks about right but it doesn't continue to the next file and doesn't echo properly
+        so I split it into four scripts to see what was happening
+        R1 seems to have worked so i made R2_base_qual_hist.sh, R3_base_qual_hist.sh, R4_base_qual_hist.sh
+        jobs 23622, 23628, 23624
+        23622:
+        	Percent of CPU this job got: 99%
+            Elapsed (wall clock) time (h:mm:ss or m:ss): 13:23.63
+        23628:
+            Percent of CPU this job got: 99%
+            Elapsed (wall clock) time (h:mm:ss or m:ss): 13:19.74
+        23624:
+            Percent of CPU this job got: 99%
+            Elapsed (wall clock) time (h:mm:ss or m:ss): 1:34:59
+        all exit status 0 and graphs look as I think they should
