@@ -9,7 +9,7 @@
 written during the Bioinformatics and Genomics Program coursework.
 You should update this docstring to reflect what you would like it to say'''
 
-__version__ = "0.4"         # Read way more about versioning here:
+__version__ = "0.5"         # Read way more about versioning here:
                             # https://en.wikipedia.org/wiki/Software_versioning
 
 DNA_bases = set("ACTGNactgn")
@@ -66,6 +66,25 @@ def oneline_fasta(filein: str, fileout: str) -> str:
                 else:
                     fout.write(line.strip())
     return
+
+rev_dict={"A":"T","T":"A","G":"C","C":"G","N":"N"}
+
+def rev_comp(seq: str, rev_dict) -> str:
+    '''This function will take a sequence and return the reverse complement of that sequence'''
+    assert bioinfo.validate_base_seq(seq)
+    seq=seq[::-1]
+    rev=""
+    for i in seq:
+        rev += rev_dict[i]
+    return rev
+
+def read_rec(fq_filehand) -> list:          #This function is important to be able to read files R1-R4 one record at a time, which I used later in a while true loop
+    '''This function can read the first record of the file called with the file handle. It should be used in a while true loop to be able to go through all the records and can be used in conjuntion with other files at the same time by calling them by their file handles'''
+    header=fq_filehand.readline().strip()
+    seq=fq_filehand.readline().strip()
+    plus=fq_filehand.readline().strip()
+    quality=fq_filehand.readline().strip()
+    return [header,seq,plus,quality]
 
 if __name__ == "__main__":
     # write tests for functions above, Leslie has already populated some tests for convert_phred
